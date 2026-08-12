@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="filters">
+    <form method="GET" action="{{ url_for('dashboard') }}" class="filter-form">
+        <input type="text" name="q" placeholder="Search username or IP" value="{{ filters.q }}">
+
+        <select name="severity">
+            <option value="">All Severities</option>
+            {% for sev in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'] %}
+            <option value="{{ sev }}" {% if filters.severity == sev %}selected{% endif %}>{{ sev }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="rule">
+            <option value="">All Rules</option>
+            {% for rule in rule_names %}
+            <option value="{{ rule }}" {% if filters.rule == rule %}selected{% endif %}>{{ rule }}</option>
+            {% endfor %}
+        </select>
+
+        <label>From <input type="date" name="start_date" value="{{ filters.start_date }}"></label>
+        <label>To <input type="date" name="end_date" value="{{ filters.end_date }}"></label>
+
+        <button type="submit">Apply</button>
+        <a href="{{ url_for('dashboard') }}" class="clear-link">Clear</a>
+    </form>
+</section>
+
+<section class="metrics">
+    <div class="metric-card">
+        <span class="metric-value">{{ metrics.total_events }}</span>
+        <span class="metric-label">Total Events</span>
+    </div>
+    <div class="metric-card">
+        <span class="metric-value">{{ metrics.total_alerts }}</span>
+        <span class="metric-label">Total Alerts</span>
+    </div>
+    <div class="metric-card high">
+        <span class="metric-value">{{ metrics.high_count }}</span>
+        <span class="metric-label">High Severity</span>
+    </div>
+    <div class="metric-card critical">
+        <span class="metric-value">{{ metrics.critical_count }}</span>
+        <span class="metric-label">Critical Severity</span>
+    </div>
+</section>
+
+<section class="alerts">
+    <h2>Alerts</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Severity</th>
+                <th>Rule</th>
+                <th>Username</th>
+                <th>IP Address</th>
+                <th>MITRE Technique</th>
+                <th>Triggered At</th>
+                <th>Status</th>
+                <th>Update</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for alert in alerts %}
+            <tr>
+                <td>
+                    <span class="badge" style="background-color: {{ severity_colors.get(alert.severity, '#6b7280') }}">
+                        {{ alert.severity }}
+                    </span>
+                </td>
+                <td>{{ alert.rule_name }}</td>
+                <td>{{ alert.username or '-' }}</td>
+                <td>{{ alert.ip_address or '-' }}</td>
+                <td>
+                    {% if alert.mitre_url %}
+                    <a href="{{ alert.mitre_url }}" target="_blank">{{ alert.mitre_technique_id }} - {{ alert.mitre_technique_name }}</a>
+                    {% else %}
+                    {{ alert.mitre_technique_id or '-' }}
+                    {% endif %}
+                </td>
+                <td>{{ alert.triggered_at }}</td>
+                <td>{{ alert.status }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('update_status', alert_id=alert.id) }}">
+                        <select name="status">
+                            {% for s in alert_statuses %}
+                            <option value="{{ s }}" {% if s == alert.status %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit">Update</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="events">
+    <h2>Recent Events</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Username</th>
+                <th>IP Address</th>
+                <th>Event Type</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr class="{{ 'event-success' if event.status == 'success' else 'event-failure' }}">
+                <td>{{ event.timestamp }}</td>
+                <td>{{ event.username }}</td>
+                <td>{{ event.ip_address }}</td>
+                <td>{{ event.event_type }}</td>
+                <td>{{ event.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+{% endblock %}

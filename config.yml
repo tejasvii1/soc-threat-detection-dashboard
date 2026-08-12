@@ -1,0 +1,18 @@
+detection:
+  brute_force:
+    threshold: 5
+    window_minutes: 10
+  impossible_travel:
+    window_minutes: 30
+    max_plausible_speed_kmh: 900
+  suspicious_ip:
+    dedupe_window_minutes: 15
+
+known_bad_ips:
+  - 45.155.205.13
+  - 185.220.101.4
+  - 91.219.237.244
+
+severity_escalation:
+  window_minutes: 30
+  min_high_alerts: 2

@@ -1,0 +1,120 @@
+* { box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background-color: #0f172a;
+    color: #e2e8f0;
+    margin: 0;
+}
+header {
+    background-color: #1e293b;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #334155;
+}
+header h1 { margin: 0; font-size: 1.5rem; }
+main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+.metrics { display: flex; gap: 1rem; margin-bottom: 2rem; }
+.metric-card {
+    background-color: #1e293b;
+    border-radius: 8px;
+    padding: 1.5rem;
+    flex: 1;
+    text-align: center;
+    border: 1px solid #334155;
+}
+.metric-card.high { border-color: #f97316; }
+.metric-card.critical { border-color: #dc2626; }
+.metric-value { display: block; font-size: 2rem; font-weight: bold; }
+.metric-label { display: block; font-size: 0.85rem; color: #94a3b8; margin-top: 0.25rem; }
+section { margin-bottom: 2rem; }
+h2 {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1e293b;
+    border-radius: 8px;
+    overflow: hidden;
+}
+th, td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #334155;
+    font-size: 0.9rem;
+}
+th {
+    background-color: #0f172a;
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+.badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+.event-failure { background-color: rgba(220, 38, 38, 0.08); }
+.event-success { background-color: transparent; }
+a { color: #60a5fa; }
+form { display: flex; gap: 0.5rem; align-items: center; }
+select, button {
+    background-color: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.85rem;
+}
+button { cursor: pointer; }
+button:hover { background-color: #334155; }
+
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-form input[type="text"],
+.filter-form select,
+.filter-form input[type="date"] {
+    background-color: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+}
+
+.filter-form label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.filter-form button {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: white;
+    padding: 0.4rem 0.9rem;
+}
+.filter-form button:hover { background-color: #1d4ed8; }
+.clear-link {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-decoration: underline;
+}
