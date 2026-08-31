@@ -14,16 +14,16 @@ Note: hosted on Render's free tier, which sleeps after 15 minutes of inactivity 
 
 ## Tech Stack
 
-| Layer | Choice |
-|---|---|
-| Backend | Flask 3, Python 3 |
-| Database | SQLite (stdlib `sqlite3`) |
-| Config | PyYAML (`config.yml`) |
-| Secrets | `python-dotenv` (`.env`, gitignored) |
-| Notifications | Discord webhook via `requests` |
-| Frontend | Server-rendered Jinja2 templates, hand-written CSS (dark theme, no JS framework) |
-| Hosting | Render, Gunicorn as the production WSGI server |
-| Dev Environment | WSL2 (Ubuntu), VS Code |
+- **Language:** Python 3
+- **Backend:** Flask 3
+- **Database:** SQLite (`sqlite3`)
+- **Frontend:** Jinja2, HTML, CSS
+- **Configuration:** PyYAML (`config.yml`)
+- **Notifications:** Discord Webhooks (`requests`)
+- **Environment Variables:** `python-dotenv`
+- **Production Server:** Gunicorn
+- **Hosting:** Render
+- **Development Environment:** WSL2 (Ubuntu), VS Code
 
 ## Features
 
