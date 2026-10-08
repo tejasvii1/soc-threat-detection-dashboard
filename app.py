@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
-from db import get_connection, get_event_count, get_alert_count, update_alert_status, ALERT_STATUSES, init_db
+from db import get_connection, get_event_count, get_alert_count, update_alert_status, ALERT_STATUSES, init_db, get_triage_by_alert
 from mitre import get_technique
+from ai_triage import triage_alert, is_enabled as triage_enabled, TriageError
 
 app = Flask(__name__)
 
@@ -76,11 +77,13 @@ def dashboard():
         "critical_count": critical_count,
     }
 
+    triage_by_alert = get_triage_by_alert()
     alerts_with_mitre = []
     for alert in alerts:
         alert_dict = dict(alert)
         technique = get_technique(alert_dict.get("mitre_technique_id"))
         alert_dict["mitre_url"] = technique["url"] if technique else None
+        alert_dict["triage"] = triage_by_alert.get(alert_dict["id"])
         alerts_with_mitre.append(alert_dict)
 
     return render_template(
@@ -91,6 +94,8 @@ def dashboard():
         severity_colors=SEVERITY_COLORS,
         alert_statuses=ALERT_STATUSES,
         rule_names=rule_names,
+        triage_enabled=triage_enabled(),
+        triage_error=request.args.get("triage_error", ""),
         filters={
             "q": search,
             "severity": severity_filter,
@@ -106,6 +111,18 @@ def update_status(alert_id):
         update_alert_status(alert_id, new_status)
     except ValueError:
         pass
+    return redirect(url_for("dashboard"))
+@app.route("/alerts/<int:alert_id>/triage", methods=["POST"])
+def run_triage(alert_id):
+    if not triage_enabled():
+        return redirect(url_for("dashboard", triage_error="AI triage is not configured."))
+    # each alert is only sent to the model once; the stored note is reused after that
+    if alert_id in get_triage_by_alert():
+        return redirect(url_for("dashboard"))
+    try:
+        triage_alert(alert_id)
+    except TriageError as e:
+        return redirect(url_for("dashboard", triage_error=str(e)))
     return redirect(url_for("dashboard"))
 if __name__ == "__main__":
     app.run(debug=True, port=5000, host="0.0.0.0")

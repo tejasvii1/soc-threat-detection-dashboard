@@ -20,6 +20,7 @@ Note: hosted on Render's free tier, which sleeps after 15 minutes of inactivity 
 - **Frontend:** Jinja2, HTML, CSS
 - **Configuration:** PyYAML (`config.yml`)
 - **Notifications:** Discord Webhooks (`requests`)
+- **AI Triage:** Claude API (`anthropic` SDK), structured output validated with Pydantic
 - **Environment Variables:** `python-dotenv`
 - **Production Server:** Gunicorn
 - **Hosting:** Render
@@ -59,6 +60,14 @@ Note: hosted on Render's free tier, which sleeps after 15 minutes of inactivity 
 
 **Config-driven thresholds**
 - Detection sensitivity lives in `config.yml`, not hardcoded in Python
+
+**AI triage notes (optional)**
+- An "AI Triage" button on each alert sends the alert plus the surrounding events for that user/IP to the Claude API and stores a short note: an assessment (`likely_malicious` / `suspicious` / `likely_benign`), a summary, and up to three recommended actions
+- The response is constrained to a fixed JSON schema, so the dashboard never has to parse free text
+- Log fields are attacker-controlled, so the prompt marks them as untrusted data, the model has no tools and cannot change alert status, and its output is HTML-escaped when rendered
+- Each alert is triaged at most once and the note is stored in SQLite (`alert_triage`), which caps API cost
+- Off by default: the button only appears when `ANTHROPIC_API_KEY` is set, and API failures show an error instead of breaking the dashboard
+- The note is advisory: the detection rules, severity, and analyst status workflow do not depend on it
 
 ## Architecture Diagram
 
@@ -117,6 +126,7 @@ This is a server-rendered dashboard, not a JSON API, so the surface is small —
 |---|---|---|
 | GET | `/` | Dashboard home. Renders metrics, the alerts table, and the events timeline. Accepts `q`, `severity`, `rule`, `start_date`, `end_date` query params for search/filtering. |
 | POST | `/alerts/<id>/status` | Updates one alert's status via `update_alert_status()`, then redirects back to `/`. Rejects any status outside the fixed enum. |
+| POST | `/alerts/<id>/triage` | Generates and stores an AI triage note for one alert (only when `ANTHROPIC_API_KEY` is set), then redirects back to `/`. |
 
 ## Screenshots
 
@@ -185,7 +195,19 @@ The app is self-seeding — if `data/soc.db` is empty when it starts, it runs th
    DASHBOARD_URL=http://localhost:5000
    ```
 
+### AI triage setup (optional)
+
+Add an Anthropic API key to `.env` to enable the "AI Triage" button:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+`python3 ai_triage.py` triages every alert that doesn't have a note yet.
+
 ## Future Improvements
+
+- Measure AI triage accuracy against the attacks `generate_logs.py` injects, which are known ground truth.
 
 - Password spraying detection (`T1110.003`) — many failed logins across many usernames from one IP, distinct from the single-username brute-force rule already implemented.
 - Automated tests for the detection engine (particularly the sliding-window and haversine logic) so threshold changes in `config.yml` can be validated against known fixtures, instead of relying on the manual testing above.
