@@ -62,12 +62,9 @@ Note: hosted on Render's free tier, which sleeps after 15 minutes of inactivity 
 - Detection sensitivity lives in `config.yml`, not hardcoded in Python
 
 **AI triage notes (optional)**
-- An "AI Triage" button on each alert sends the alert plus the surrounding events for that user/IP to the Claude API and stores a short note: an assessment (`likely_malicious` / `suspicious` / `likely_benign`), a summary, and up to three recommended actions
-- The response is constrained to a fixed JSON schema, so the dashboard never has to parse free text
-- Log fields are attacker-controlled, so the prompt marks them as untrusted data, the model has no tools and cannot change alert status, and its output is HTML-escaped when rendered
-- Each alert is triaged at most once and the note is stored in SQLite (`alert_triage`), which caps API cost
-- Off by default: the button only appears when `ANTHROPIC_API_KEY` is set, and API failures show an error instead of breaking the dashboard
-- The note is advisory: the detection rules, severity, and analyst status workflow do not depend on it
+- An "AI Triage" button on each alert sends the alert and its surrounding events to the Claude API and stores a short note: an assessment, a summary, and up to three recommended actions
+- Log fields are attacker-controlled, so they are passed to the model as untrusted data, the response is constrained to a fixed JSON schema, and the note is HTML-escaped when rendered
+- Off by default: the button only appears when `ANTHROPIC_API_KEY` is set, and each alert is triaged at most once
 
 ## Architecture Diagram
 
@@ -208,7 +205,6 @@ ANTHROPIC_API_KEY=sk-ant-...
 ## Future Improvements
 
 - Measure AI triage accuracy against the attacks `generate_logs.py` injects, which are known ground truth.
-
 - Password spraying detection (`T1110.003`) — many failed logins across many usernames from one IP, distinct from the single-username brute-force rule already implemented.
 - Automated tests for the detection engine (particularly the sliding-window and haversine logic) so threshold changes in `config.yml` can be validated against known fixtures, instead of relying on the manual testing above.
 - Apply the severity/rule/date filters to the events timeline as well as the alerts table.
