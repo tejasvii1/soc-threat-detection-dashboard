@@ -7,7 +7,7 @@ import anthropic
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-from db import get_connection, get_alert, save_triage
+from db import get_connection, get_alert, save_triage, init_db
 from mitre import get_technique
 
 load_dotenv()
@@ -135,6 +135,7 @@ def triage_alert(alert_id):
 
 if __name__ == "__main__":
     # triage every alert that doesn't have a note yet
+    init_db()
     with get_connection() as conn:
         pending = [r[0] for r in conn.execute(
             "SELECT id FROM alerts WHERE id NOT IN (SELECT alert_id FROM alert_triage) ORDER BY id"
