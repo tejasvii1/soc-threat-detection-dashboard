@@ -10,12 +10,13 @@ From the project root (pick your own admin password, at least 8 characters):
 docker run -d --name splunk -p 8001:8000 \
   -e SPLUNK_GENERAL_TERMS=--accept-sgt-current-at-splunk-com \
   -e SPLUNK_START_ARGS=--accept-license \
+  -e SPLUNK_LICENSE_URI=Free \
   -e SPLUNK_PASSWORD='choose-a-password' \
   -v "$PWD/logs:/data/logs:ro" \
   splunk/splunk:latest
 ```
 
-The two `accept` flags agree to Splunk's license terms, so read them first. Startup takes a few minutes; then open http://localhost:8001 and log in as `admin`.
+The two `accept` flags agree to Splunk's license terms, so read them first. Startup takes about five minutes (`docker ps` shows `healthy` when it's ready); then open http://localhost:8001. The Free license has no login screen.
 
 ## 2. Load the log
 
@@ -44,6 +45,7 @@ Paste each search from `detections.spl` into **Search & Reporting** with the tim
 
 ## Differences from `detect.py`
 
+- The brute-force search reports the peak number of failures in any 10-minute window (10 in the sample data); the dashboard alert fires the moment the threshold is crossed, so it reports 6.
 - Brute force uses `streamstats time_window=10m`, Splunk's equivalent of the two-pointer sliding window.
 - Impossible travel only checks for a country change within 30 minutes; the Python rule also computes haversine distance and required speed.
 
