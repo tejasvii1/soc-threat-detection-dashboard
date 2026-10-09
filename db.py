@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from contextlib import contextmanager
 
@@ -42,6 +43,17 @@ def init_db():
                 mitre_technique_name TEXT,
                 status TEXT DEFAULT 'NEW',
                 details TEXT
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS alert_triage (
+                alert_id INTEGER PRIMARY KEY REFERENCES alerts(id),
+                assessment TEXT NOT NULL,
+                summary TEXT NOT NULL,
+                recommended_actions TEXT NOT NULL,
+                model TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
@@ -105,3 +117,22 @@ def get_alert(alert_id):
     with get_connection() as conn:
         row = conn.execute("SELECT * FROM alerts WHERE id = ?", (alert_id,)).fetchone()
         return dict(row) if row else None
+def save_triage(alert_id, assessment, summary, recommended_actions, model=None):
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO alert_triage
+                (alert_id, assessment, summary, recommended_actions, model)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (alert_id, assessment, summary, json.dumps(recommended_actions), model),
+        )
+def get_triage_by_alert():
+    with get_connection() as conn:
+        rows = conn.execute("SELECT * FROM alert_triage").fetchall()
+    triage = {}
+    for row in rows:
+        entry = dict(row)
+        entry["recommended_actions"] = json.loads(entry["recommended_actions"])
+        triage[entry["alert_id"]] = entry
+    return triage

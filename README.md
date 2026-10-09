@@ -20,6 +20,7 @@ Note: hosted on Render's free tier, which sleeps after 15 minutes of inactivity 
 - **Frontend:** Jinja2, HTML, CSS
 - **Configuration:** PyYAML (`config.yml`)
 - **Notifications:** Discord Webhooks (`requests`)
+- **AI Triage:** Claude API (`anthropic` SDK), structured output validated with Pydantic
 - **Environment Variables:** `python-dotenv`
 - **Production Server:** Gunicorn
 - **Hosting:** Render
@@ -59,6 +60,11 @@ Note: hosted on Render's free tier, which sleeps after 15 minutes of inactivity 
 
 **Config-driven thresholds**
 - Detection sensitivity lives in `config.yml`, not hardcoded in Python
+
+**AI triage notes (optional)**
+- An "AI Triage" button on each alert sends the alert and its surrounding events to the Claude API and stores a short note: an assessment, a summary, and up to three recommended actions
+- Log fields are attacker-controlled, so they are passed to the model as untrusted data, the response is constrained to a fixed JSON schema, and the note is HTML-escaped when rendered
+- Off by default: the button only appears when `ANTHROPIC_API_KEY` is set, and each alert is triaged at most once
 
 ## Architecture Diagram
 
@@ -117,6 +123,7 @@ This is a server-rendered dashboard, not a JSON API, so the surface is small —
 |---|---|---|
 | GET | `/` | Dashboard home. Renders metrics, the alerts table, and the events timeline. Accepts `q`, `severity`, `rule`, `start_date`, `end_date` query params for search/filtering. |
 | POST | `/alerts/<id>/status` | Updates one alert's status via `update_alert_status()`, then redirects back to `/`. Rejects any status outside the fixed enum. |
+| POST | `/alerts/<id>/triage` | Generates and stores an AI triage note for one alert (only when `ANTHROPIC_API_KEY` is set), then redirects back to `/`. |
 
 ## Screenshots
 
@@ -185,8 +192,19 @@ The app is self-seeding — if `data/soc.db` is empty when it starts, it runs th
    DASHBOARD_URL=http://localhost:5000
    ```
 
+### AI triage setup (optional)
+
+Add an Anthropic API key to `.env` to enable the "AI Triage" button:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+`python3 ai_triage.py` triages every alert that doesn't have a note yet.
+
 ## Future Improvements
 
+- Measure AI triage accuracy against the attacks `generate_logs.py` injects, which are known ground truth.
 - Password spraying detection (`T1110.003`) — many failed logins across many usernames from one IP, distinct from the single-username brute-force rule already implemented.
 - Automated tests for the detection engine (particularly the sliding-window and haversine logic) so threshold changes in `config.yml` can be validated against known fixtures, instead of relying on the manual testing above.
 - Apply the severity/rule/date filters to the events timeline as well as the alerts table.

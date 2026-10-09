@@ -1,0 +1,37 @@
+``` The same three detections as detect.py, written as Splunk searches (SPL).
+    Run each search separately with the time range set to "All time".
+    Every search starts by extracting the fields from the raw log line:
+    2026-08-30 16:39:45 | user=rpatel | ip=203.0.113.45 | event=login_success | status=success | location=Chicago,US ```
+
+
+``` 1. Brute force (MITRE T1110): more than 5 failed logins from one IP inside a 10-minute sliding window.
+    streamstats with time_window is the SPL version of the two-pointer sliding window in detect_brute_force(). ```
+index=main sourcetype=auth_log
+| rex "user=(?<user>\S+) \| ip=(?<src_ip>\S+) \| event=(?<event>\S+) \| status=(?<result>\S+) \| location=(?<city>[^,]+),(?<country>\S+)"
+| search result=failure
+| sort 0 _time
+| streamstats time_window=10m count AS failures_in_window BY src_ip
+| where failures_in_window > 5
+| stats max(failures_in_window) AS max_failures, values(user) AS targeted_users, min(_time) AS first_seen, max(_time) AS last_seen BY src_ip
+| convert ctime(first_seen) ctime(last_seen)
+
+
+``` 2. Suspicious IP (MITRE T1110): any login attempt from the known-bad IP list in config.yml. ```
+index=main sourcetype=auth_log
+| rex "user=(?<user>\S+) \| ip=(?<src_ip>\S+) \| event=(?<event>\S+) \| status=(?<result>\S+) \| location=(?<city>[^,]+),(?<country>\S+)"
+| search src_ip IN ("45.155.205.13", "185.220.101.4", "91.219.237.244")
+| stats count AS attempts, values(user) AS users, values(result) AS results, min(_time) AS first_seen BY src_ip
+| convert ctime(first_seen)
+
+
+``` 3. Impossible travel (MITRE T1078): two successful logins by the same user from different countries
+    within 30 minutes. This is simpler than detect_impossible_travel(), which also computes the haversine
+    distance and required speed; here a country change inside the window is treated as the signal. ```
+index=main sourcetype=auth_log
+| rex "user=(?<user>\S+) \| ip=(?<src_ip>\S+) \| event=(?<event>\S+) \| status=(?<result>\S+) \| location=(?<city>[^,]+),(?<country>\S+)"
+| search result=success
+| sort 0 user _time
+| streamstats current=f last(city) AS prev_city, last(country) AS prev_country, last(_time) AS prev_time BY user
+| eval minutes_apart = round((_time - prev_time) / 60, 1)
+| where isnotnull(prev_country) AND country != prev_country AND minutes_apart <= 30
+| table _time user prev_city city minutes_apart src_ip
